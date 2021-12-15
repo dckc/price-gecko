@@ -1,10 +1,7 @@
 // @ts-check
-import 'ses';
-
-lockdown();
 
 // https://www.coingecko.com/api/documentations/v3/swagger.json
-const API = {
+export const API = {
   swagger: '2.0',
   info: {
     description: '',
@@ -17,7 +14,7 @@ const API = {
   // ...
 };
 
-const IBC_TOKENS = [
+export const IBC_TOKENS = [
   { id: 'akash-network', symbol: 'akt', name: 'Akash Network' },
   { id: 'band-protocol', symbol: 'band', name: 'Band Protocol' },
   { id: 'chainlink', symbol: 'link', name: 'Chainlink' },
@@ -70,44 +67,3 @@ export const makeGeckoClient = ({ get }) => {
     },
   });
 };
-
-/** @param { ReturnType<makeGeckoClient> } client */
-const lookupTokens = async (client) => {
-  const coins = await client.coins.list();
-  const targets = coins.filter((coin) =>
-    [
-      'atom',
-      'link',
-      'osmo',
-      'luna',
-      'ust',
-      'band',
-      'cro',
-      'scrt',
-      'akt',
-    ].includes(coin.symbol),
-  );
-  return targets;
-};
-
-/** @param { ReturnType<makeGeckoClient> } client */
-const getPrices = async (client) => {
-  const ids = IBC_TOKENS.map(({ id }) => id);
-  const prices = await client.simple.token_price(ids);
-  return prices;
-};
-
-const unsafeLookupTokens = async () => {
-  const { get } = await import('https');
-  const client = makeGeckoClient({ get });
-  return lookupTokens(client);
-};
-
-const unsafeGetPrices = async () => {
-  const { get } = await import('https');
-  const client = makeGeckoClient({ get });
-  return getPrices(client);
-};
-
-unsafeLookupTokens().then(console.log).catch(console.error);
-unsafeGetPrices().then(console.log).catch(console.error);
