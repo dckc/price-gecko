@@ -56,6 +56,18 @@ export const makeGeckoClient = ({ get }) => {
     coins: {
       list: () => getText(`${base}/coins/list`).then(JSON.parse),
     },
+    simple: {
+      /**
+       * @param { string[] } ids
+       * @param { string[] } vs_currencies
+       */
+      token_price: (ids, vs_currencies = ['usd']) =>
+        getText(
+          `${base}/simple/price?ids=${ids.join(
+            ',',
+          )}&vs_currencies=${vs_currencies.join(',')}`,
+        ).then(JSON.parse),
+    },
   });
 };
 
@@ -78,10 +90,24 @@ const lookupTokens = async (client) => {
   return targets;
 };
 
+/** @param { ReturnType<makeGeckoClient> } client */
+const getPrices = async (client) => {
+  const ids = IBC_TOKENS.map(({ id }) => id);
+  const prices = await client.simple.token_price(ids);
+  return prices;
+};
+
 const unsafeLookupTokens = async () => {
   const { get } = await import('https');
   const client = makeGeckoClient({ get });
   return lookupTokens(client);
 };
 
+const unsafeGetPrices = async () => {
+  const { get } = await import('https');
+  const client = makeGeckoClient({ get });
+  return getPrices(client);
+};
+
 unsafeLookupTokens().then(console.log).catch(console.error);
+unsafeGetPrices().then(console.log).catch(console.error);
