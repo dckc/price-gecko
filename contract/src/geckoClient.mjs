@@ -17,6 +17,18 @@ const API = {
   // ...
 };
 
+const IBC_TOKENS = [
+  { id: 'akash-network', symbol: 'akt', name: 'Akash Network' },
+  { id: 'band-protocol', symbol: 'band', name: 'Band Protocol' },
+  { id: 'chainlink', symbol: 'link', name: 'Chainlink' },
+  { id: 'cosmos', symbol: 'atom', name: 'Cosmos' },
+  { id: 'crypto-com-chain', symbol: 'cro', name: 'Crypto.com Coin' },
+  { id: 'osmosis', symbol: 'osmo', name: 'Osmosis' },
+  { id: 'secret', symbol: 'scrt', name: 'Secret' },
+  { id: 'terra-luna', symbol: 'luna', name: 'Terra' },
+  { id: 'terrausd', symbol: 'ust', name: 'TerraUSD' },
+];
+
 /**
  * @param {{
  *   get: typeof import('https').get,
