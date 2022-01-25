@@ -1,18 +1,54 @@
 // @ts-check
 import '@agoric/install-ses';
 import { E, Far } from '@agoric/far';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeGeckoClient, IBC_TOKENS } from '../contract/src/geckoClient.js';
 import { makeGeckoPriceAuthority } from '../contract/src/geckoPriceAuthority.js';
+import { makeNotifierKit } from '../contract/node_modules/@agoric/notifier/src/notifier.js';
+
+const { fromEntries, values } = Object;
 
 const testPriceAuthority = async ({ get, clock }) => {
   const apiClient = makeGeckoClient({ get });
+
+  /** @type { TimerService } */
   const timer = Far('Timer', {
     getCurrentTimestamp: () => clock(),
+    setWakeup: () => assert.fail('TODO'),
+    removeWakeup: () => assert.fail('TODO'),
+    delay: () => assert.fail('TODO'),
+    makeNotifier: () => assert.fail('TODO'),
+    makeRepeater: () => assert.fail('TODO'),
   });
-  const pAuthority = makeGeckoPriceAuthority(apiClient, timer);
-  const { atom: atomBrand, usd: usdBrand } = await E(pAuthority).getBrands();
-  const atom500 = AmountMath.make(atomBrand, 500n);
+
+  const { notifier: ticker, updater } = makeNotifierKit();
+
+  const usdBrand = makeIssuerKit(
+    'usd',
+    AssetKind.NAT,
+    harden({ decimalPlaces: 2 }),
+  ).brand;
+
+  const idBySymbol = fromEntries(
+    values(IBC_TOKENS).map(({ id, symbol }) => [symbol, id]),
+  );
+  const ibcBrands = fromEntries(
+    IBC_TOKENS.map((info) => [info.symbol, makeIssuerKit(info.symbol).brand]),
+  );
+
+  const pAuthority =  makeGeckoPriceAuthority(
+    ticker,
+    usdBrand,
+    ibcBrands,
+    idBySymbol,
+    timer,
+  );
+
+  const prices = await apiClient.simple.token_price(values(idBySymbol));
+  console.log({ prices });
+  updater.updateState(prices);
+
+  const atom500 = AmountMath.make(ibcBrands.atom, 500n);
   const quote = await E(pAuthority).quoteGiven(atom500, usdBrand);
   console.log(quote.quoteAmount.value);
   console.log(quote);
@@ -57,7 +93,7 @@ const lookupTokens = async (client) => {
   };
   
 // unsafeLookupTokens().then(console.log).catch(console.error);
-// unsafeGetPrices().then(console.log).catch(console.error);
+unsafeGetPrices().then(console.log).catch(console.error);
 
 (async () => {
   const https = await import('https'); // DANGER! AMBIENT AUTHORITY! TESTING ONLY!
