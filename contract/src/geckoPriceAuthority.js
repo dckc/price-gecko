@@ -3,13 +3,14 @@ import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@agoric/far';
 import {
   makeNotifierFromAsyncIterable,
+  makeNotifierKit,
   observeIteration,
 } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 
 const { details: X } = assert;
-const { entries } = Object;
+const { entries, fromEntries, keys } = Object;
 
 /**
  * @param { Notifier<GeckoPrices> } ticker
@@ -162,4 +163,38 @@ export const makeGeckoPriceAuthority = (
     mutableQuoteWhenLT: () => assert.fail('TODO'),
     mutableQuoteWhenLTE: () => assert.fail('TODO'),
   });
+};
+
+/** @param { ContractFacet } zcf */
+export const start = (zcf) => {
+  const {
+    idBySymbol,
+    timer,
+    brands: { RUN: runBrand },
+  } = zcf.getTerms();
+
+  const { notifier: ticker, updater } = makeNotifierKit();
+
+  const brandBySymbol = fromEntries(
+    keys(idBySymbol).map((symbol) => [symbol, makeIssuerKit(symbol).brand]),
+  );
+
+  const priceAuthority = makeGeckoPriceAuthority(
+    ticker,
+    runBrand,
+    brandBySymbol,
+    idBySymbol,
+    timer,
+  );
+
+  const publicFacet = Far('public', {
+    getPriceAuthority: () => priceAuthority,
+    getBrands: () => brandBySymbol,
+  });
+
+  const creatorFacet = Far('creator', {
+    getUpdater: () => updater,
+  });
+
+  return { publicFacet, creatorFacet };
 };
